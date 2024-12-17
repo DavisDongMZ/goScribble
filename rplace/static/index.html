@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>r/place</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 20px auto;
+            cursor: crosshair;
+        }
+        #colorPicker {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>r/place</h1>
+    <p>Click on the canvas to change the color of pixels.</p>
+    <input type="color" id="colorPicker" value="#ff0000">
+    <canvas id="placeCanvas" width="500" height="500"></canvas>
+    <script>
+        const socket = new WebSocket("ws://localhost:8080/ws");
+
+        const canvas = document.getElementById("placeCanvas");
+        const ctx = canvas.getContext("2d");
+        const colorPicker = document.getElementById("colorPicker");
+
+        const pixelSize = 10; // Size of each pixel
+        const rows = canvas.width / pixelSize;
+        const cols = canvas.height / pixelSize;
+
+        // Initialize the board with white pixels
+        const board = Array(rows).fill(null).map(() => Array(cols).fill("#ffffff"));
+
+        // Draw the board
+        function drawBoard() {
+            for (let x = 0; x < rows; x++) {
+                for (let y = 0; y < cols; y++) {
+                    ctx.fillStyle = board[x][y];
+                    ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                }
+            }
+        }
+
+        // Update the board when a pixel is changed
+        function updatePixel(x, y, color) {
+            board[x][y] = color;
+            ctx.fillStyle = color;
+            ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+        }
+
+        // Handle mouse clicks
+        canvas.addEventListener("click", (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((event.clientX - rect.left) / pixelSize);
+            const y = Math.floor((event.clientY - rect.top) / pixelSize);
+
+            const color = colorPicker.value;
+
+            // Update the local board
+            updatePixel(x, y, color);
+
+            // Send the update to the server
+            const update = { x, y, color };
+            socket.send(JSON.stringify(update));
+        });
+
+        // Handle messages from the WebSocket server
+        socket.onmessage = (event) => {
+            const { x, y, color } = JSON.parse(event.data);
+            updatePixel(x, y, color);
+        };
+
+        // Handle WebSocket connection
+        socket.onopen = () => {
+            console.log("Connected to WebSocket server");
+        };
+
+        socket.onclose = () => {
+            console.log("WebSocket connection closed");
+        };
+
+        // Draw the initial board
+        drawBoard();
+    </script>
+</body>
+</html>
+
