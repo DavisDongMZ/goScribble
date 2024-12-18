@@ -21,7 +21,7 @@ var db *gorm.DB
 
 func initDB() {
     // Please replace the credentials as needed
-    dsn := "host=localhost user=postgres password=Dmz20020614 dbname=rplace port=5432 sslmode=disable"
+    dsn := "host=localhost user=postgres password=123456 dbname=rplace port=5432 sslmode=disable"
     var err error
     db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
     if err != nil {
